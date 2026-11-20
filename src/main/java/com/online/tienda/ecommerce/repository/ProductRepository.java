@@ -26,7 +26,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             value = "SELECT p FROM Product p JOIN FETCH p.categories WHERE p.price <= :priceMax AND p.price >= :priceMin AND p.active = true",
             countQuery = "SELECT count(p) FROM Product p WHERE p.price <= :priceMax AND p.price >= :priceMin AND p.active = true"
     )
-    Page<Product> findAllByPriceBetween(@Param("priceMax") BigDecimal priceMax, @Param("priceMin") BigDecimal priceMin, Pageable pageable);
+    Page<Product> findAllByPriceBetween(@Param("priceMin") BigDecimal priceMin, @Param("priceMax") BigDecimal priceMax, Pageable pageable);
 
     // Filtro solo por precio máximo
     @Query(
@@ -52,7 +52,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Filtro por nombre
     @Query(
             value = "SELECT p FROM Product p JOIN FETCH p.categories WHERE p.name = :productName AND p.active = true",
-            countQuery = "SELECT count(p) FROM Product p JOIN p.categories WHERE p.name = :productName AND p.active = true"
+            countQuery = "SELECT count(p) FROM Product p JOIN p.categories c WHERE p.name = :productName AND p.active = true"
     )
     Page<Product> findByNameAndActiveTrue(@Param("productName") String productName, Pageable pageable);
 

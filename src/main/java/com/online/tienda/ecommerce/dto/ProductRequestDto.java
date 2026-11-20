@@ -23,6 +23,8 @@ public record ProductRequestDto(
         @PositiveOrZero(message = "Stock must be zero or greater")
         Integer stock,
 
+        Boolean active,
+
         Set<Long> categoryIds
 ) {
 }

@@ -73,8 +73,8 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProductResponseDto> findAllByPriceBetween(BigDecimal priceMax, BigDecimal priceMin, Pageable pageable) {
-        Page<Product> products = productRepository.findAllByPriceBetween(priceMax, priceMin, pageable);
+    public Page<ProductResponseDto> findAllByPriceBetween(BigDecimal priceMin, BigDecimal priceMax, Pageable pageable) {
+        Page<Product> products = productRepository.findAllByPriceBetween(priceMin, priceMax, pageable);
         return products.map(productMapper::toDto);
     }
 
@@ -83,6 +83,8 @@ public class ProductService {
         Page<Product> products = productRepository.findByCategory(categoryId, pageable);
         return products.map(productMapper::toDto);
     }
+
+
 
     @Transactional
     public void saveProduct (ProductRequestDto productRequestDto) {
@@ -112,11 +114,20 @@ public class ProductService {
         existingProduct.setName(productRequestDto.name());
         existingProduct.setPrice(productRequestDto.price());
         existingProduct.setDescription(productRequestDto.description());
-        //existingProduct.setActive(); TENGO QUE MIRAR SI COMPENSA AÑADIR AL PRODUCTREQUESTDTO EL ATRIBUTO ACTIVE. Preguntar si compensa devolver algo aquí o usar pruebas unitarias. Poner comentarios a cada servicio.
         existingProduct.setStock(productRequestDto.stock());
-        existingProduct.setCategories(categoryRepository.findAllById(productRequestDto.categoryIds()));
+
+        if(productRequestDto.active() != null) {
+            existingProduct.setActive(productRequestDto.active());
+        }
+
+        if(productRequestDto.categoryIds() != null && !productRequestDto.categoryIds().isEmpty()){
+            Set<Category> categories = new HashSet<>(categoryRepository.findAllById(productRequestDto.categoryIds()));
+            existingProduct.setCategories(categories);
+        }
+
         productRepository.save(existingProduct);
     }
+
 
 
 }
