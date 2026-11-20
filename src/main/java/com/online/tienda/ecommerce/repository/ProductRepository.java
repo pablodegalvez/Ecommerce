@@ -50,7 +50,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> findByCategory(@Param("categoryId")Long categoryId, Pageable pageable);
 
     // Filtro por nombre
-    Optional<Product> findByNameAndActiveTrue(String name);
+    @Query(
+            value = "SELECT p FROM Product p JOIN FETCH p.categories WHERE p.name = :productName AND p.active = true",
+            countQuery = "SELECT count(p) FROM Product p JOIN p.categories WHERE p.name = :productName AND p.active = true"
+    )
+    Page<Product> findByNameAndActiveTrue(@Param("productName") String productName, Pageable pageable);
 
 
 }

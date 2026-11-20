@@ -38,13 +38,20 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public ProductResponseDto findByName(String productName) {
-        Product product = productRepository.findByNameAndActiveTrue(productName).orElseThrow(() -> new NotFoundResourceException("Product not found"));
+    public ProductResponseDto findByIdDto(Long id) {
+        Product product = productRepository.findById(id).orElseThrow(() -> new NotFoundResourceException("Product not found"));
 
         if(!product.getActive()){
             throw new NotFoundResourceException("Product is not available");
         }
         return productMapper.toDto(product);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDto> findByName(String productName, Pageable pageable) {
+        Page<Product> products = productRepository.findByNameAndActiveTrue(productName, pageable);
+
+        return products.map(productMapper::toDto);
     }
 
     @Transactional(readOnly = true)
