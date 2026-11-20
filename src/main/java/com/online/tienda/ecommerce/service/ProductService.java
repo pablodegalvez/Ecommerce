@@ -1,23 +1,33 @@
 package com.online.tienda.ecommerce.service;
 
 
+import com.online.tienda.ecommerce.dto.ProductRequestDto;
+import com.online.tienda.ecommerce.dto.ProductResponseDto;
+import com.online.tienda.ecommerce.entity.Category;
 import com.online.tienda.ecommerce.entity.Product;
 import com.online.tienda.ecommerce.exception.NotFoundResourceException;
+import com.online.tienda.ecommerce.mapper.ProductMapper;
+import com.online.tienda.ecommerce.repository.CategoryRepository;
 import com.online.tienda.ecommerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Optional;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+    private final ProductMapper productMapper;
 
+    @Transactional(readOnly = true)
     public Product findById(Long id) {
         Product product = productRepository.findById(id).orElseThrow(() -> new NotFoundResourceException("Product not found"));
 
@@ -27,52 +37,77 @@ public class ProductService {
         return product;
     }
 
-    public Optional<Product> findByName(String productName) {
-        return productRepository.findByNameAndActiveTrue(productName);
+    @Transactional(readOnly = true)
+    public ProductResponseDto findByName(String productName) {
+        Product product = productRepository.findByNameAndActiveTrue(productName).orElseThrow(() -> new NotFoundResourceException("Product not found"));
+
+        if(!product.getActive()){
+            throw new NotFoundResourceException("Product is not available");
+        }
+        return productMapper.toDto(product);
     }
 
-    public Page<Product> findAllByActiveTrue(Pageable pageable) {
-        return productRepository.findAllActiveProduct(pageable);
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDto> findAllByActiveTrue(Pageable pageable) {
+        Page<Product> products = productRepository.findAllActiveProduct(pageable);
+        return products.map(productMapper::toDto);
     }
 
-    public Page<Product> findAllByPriceGreaterThan(BigDecimal price, Pageable pageable) {
-        return productRepository.findAllByPriceGreaterThanEqual(price, pageable);
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDto> findAllByPriceGreaterThan(BigDecimal price, Pageable pageable) {
+        Page<Product> products = productRepository.findAllByPriceGreaterThanEqual(price, pageable);
+        return products.map(productMapper::toDto);
     }
 
-    public Page<Product> findAllByPriceLessThan(BigDecimal price, Pageable pageable) {
-        return productRepository.findAllByPriceLessThanEqual(price, pageable);
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDto> findAllByPriceLessThan(BigDecimal price, Pageable pageable) {
+        Page<Product> products = productRepository.findAllByPriceLessThanEqual(price, pageable);
+        return products.map(productMapper::toDto);
     }
 
-    public Page<Product> findAllByPriceBetween(BigDecimal priceMax, BigDecimal priceMin, Pageable pageable) {
-        return productRepository.findAllByPriceBetween(priceMax, priceMin, pageable);
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDto> findAllByPriceBetween(BigDecimal priceMax, BigDecimal priceMin, Pageable pageable) {
+        Page<Product> products = productRepository.findAllByPriceBetween(priceMax, priceMin, pageable);
+        return products.map(productMapper::toDto);
     }
 
-    public Page<Product> findByCategory(Long categoryId, Pageable pageable) {
-        return productRepository.findByCategory(categoryId, pageable);
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDto> findByCategory(Long categoryId, Pageable pageable) {
+        Page<Product> products = productRepository.findByCategory(categoryId, pageable);
+        return products.map(productMapper::toDto);
     }
 
-    public void saveProduct (Product product) {
+    @Transactional
+    public void saveProduct (ProductRequestDto productRequestDto) {
 
+        Product product = productMapper.toEntity(productRequestDto);
+
+        if(productRequestDto.categoryIds() != null && !productRequestDto.categoryIds().isEmpty()){
+            Set<Category> categories = new HashSet<>(categoryRepository.findAllById(productRequestDto.categoryIds()));
+            product.setCategories(categories);
+        }
         product.setActive(true);
         product.setId(null);
         productRepository.save(product);
     }
 
+    @Transactional
     public void deleteProduct (Long id) {
         Product existingProduct = findById(id);
         existingProduct.setActive(false);
         productRepository.save(existingProduct);
     }
 
-    public void updateProduct (Long id, Product product) {
+    @Transactional
+    public void updateProduct (Long id, ProductRequestDto productRequestDto) {
         Product existingProduct = findById(id);
 
-        existingProduct.setName(product.getName());
-        existingProduct.setPrice(product.getPrice());
-        existingProduct.setDescription(product.getDescription());
-        existingProduct.setActive(product.getActive());
-        existingProduct.setStock(product.getStock());
-        existingProduct.setCategories(product.getCategories());
+        existingProduct.setName(productRequestDto.name());
+        existingProduct.setPrice(productRequestDto.price());
+        existingProduct.setDescription(productRequestDto.description());
+        //existingProduct.setActive(); TENGO QUE MIRAR SI COMPENSA AÑADIR AL PRODUCTREQUESTDTO EL ATRIBUTO ACTIVE. Preguntar si compensa devolver algo aquí o usar pruebas unitarias. Poner comentarios a cada servicio.
+        existingProduct.setStock(productRequestDto.stock());
+        existingProduct.setCategories(categoryRepository.findAllById(productRequestDto.categoryIds()));
         productRepository.save(existingProduct);
     }
 
