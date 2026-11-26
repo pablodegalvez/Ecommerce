@@ -8,7 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -21,7 +21,7 @@ public class ExceptionsHandler {
     public ResponseEntity<Map<String, Object>> handleNotFoundResourceException(NotFoundResourceException ex) {
         Map<String, Object> errorDetails = new HashMap<>();
 
-        errorDetails.put("timestamp", LocalDateTime.now());
+        errorDetails.put("timestamp", Instant.now().toString());
         errorDetails.put("status", HttpStatus.NOT_FOUND.value());
         errorDetails.put("error", "Resource Not Found");
         errorDetails.put("message", ex.getMessage());
@@ -44,7 +44,7 @@ public class ExceptionsHandler {
                 ));
 
         Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
+        response.put("timestamp", Instant.now().toString());
         response.put("status", HttpStatus.BAD_REQUEST.value());
         response.put("error", "Validation Failed");
         response.put("message", errorDetails);
@@ -52,12 +52,23 @@ public class ExceptionsHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("timestamp", Instant.now().toString());
+        errorDetails.put("status", HttpStatus.BAD_REQUEST.value());
+        errorDetails.put("error", "Email Already Exists");
+        errorDetails.put("message", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
+    }
+
     //Excepción genérica para ocultar datos de seguridad
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {
         Map<String, Object> errorDetails = new HashMap<>();
 
-        errorDetails.put("timestamp", LocalDateTime.now());
+        errorDetails.put("timestamp", Instant.now().toString());
         errorDetails.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         errorDetails.put("error", "Internal Server Error");
         errorDetails.put("message", "An unexpected error occurred on the server");

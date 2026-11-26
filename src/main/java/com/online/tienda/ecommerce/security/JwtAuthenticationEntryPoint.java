@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,9 +30,11 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         Map<String, Object> errorDetails = new HashMap<>();
 
-        errorDetails.put("message", "Authentication required");
+        errorDetails.put("timestamp", Instant.now().toString());
         errorDetails.put("status", HttpServletResponse.SC_UNAUTHORIZED);
-        errorDetails.put("error", authException.getMessage());
+        errorDetails.put("message", "Authentication required");
+        errorDetails.put("error", "Unauthorized");
+        errorDetails.put("path", request.getRequestURI());
 
         //Mejor usar getOutputStream() antes que getWriter(), ya que escribe directamente los bytes generados por el JSON
         objectMapper.writeValue(response.getOutputStream(), errorDetails);
