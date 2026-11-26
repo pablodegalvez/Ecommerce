@@ -11,6 +11,7 @@ import com.online.tienda.ecommerce.repository.RoleRepository;
 import com.online.tienda.ecommerce.repository.UserRepository;
 import com.online.tienda.ecommerce.security.JwtProvider;
 import com.online.tienda.ecommerce.security.UserAdapter;
+import com.online.tienda.ecommerce.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,11 +36,9 @@ import java.util.Set;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
-    private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
 
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -58,32 +57,16 @@ public class AuthController {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        return ResponseEntity.ok(new AuthResponse(jwt, "Bearer", userDetails.getEmail(), roles));
+        return ResponseEntity.ok(new AuthResponse(jwt, "Bearer", userDetails.getEmail(), userDetails.getUsername(), roles));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest registerRequest) {
 
-        if (userRepository.existsByEmail(registerRequest.email())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "This email address is already in use"));
-        }
+        userService.registerUser(registerRequest);
 
-        User user = new User();
-        user.setUsername(registerRequest.username());
-        user.setEmail(registerRequest.email());
-        user.setPassword(passwordEncoder.encode(registerRequest.password()));
-
-        Set<Role> roles = new HashSet<>();
-        Role roleUser = roleRepository.findByRoleType(RoleType.ROLE_USER)
-                .orElseThrow(() -> new RuntimeException("Error: This role is not found"));
-        roles.add(roleUser);
-
-
-        user.setRoles(roles);
-
-        // 4. Guardar en PostgreSQL
-        userRepository.save(user);
-        return new ResponseEntity<>(Map.of("mensaje", "Usuario registrado exitosamente"), HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("message", "User registered successfully"));
     }
 
 }
